@@ -1,5 +1,5 @@
 # Multimodal-Balanced-Multispectral-Pedestrian-Detection-Implementation
-This repository is a implementation of the paper "Improving Multispectral Pedestrian Detection by Addressing Modality Imbalance Problems" by Kailai Zhou, Linsen Chen and Xun Cao published in the ECCV 2020 Conference (Arxiv Link: https://arxiv.org/pdf/2008.03043v2). Further, I have summarized the paper for easier understanding, targeted to a beginner audience.
+This repository is a implementation of the paper "Improving Multispectral Pedestrian Detection by Addressing Modality Imbalance Problems" by Kailai Zhou, Linsen Chen and Xun Cao published in the ECCV 2020 Conference (arXiv Link: https://arxiv.org/pdf/2008.03043v2). Further, I have summarized the paper for easier understanding, targeted to a beginner audience.
 
 ## Modalities in Multispectral Pedestrian Detection
 
