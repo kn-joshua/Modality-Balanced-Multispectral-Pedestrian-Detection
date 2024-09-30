@@ -78,6 +78,8 @@ The model proposed in the paper consists of two main modules. In this section, w
 
 ### DMAF (Differential Modality Aware Fusion) Module
 
+_TLDR: This module basically enhances our feature maps for both thermal and RGB maps through some computations such as taking the difference of both, followed by max-pooling, and passing it through an activation function. To the thermal feature map, the enhanced RGB map is added and vice versa: to the RGB map, the enhanced thermal map is added._
+
 As we mentioned earlier, simply combining the features from the RGB (color) and thermal (heat) images can be problematic. This approach often leads to confusion in understanding how the two types of information complement each other. It mixes helpful signals with irrelevant noise and makes it hard to clearly identify important features.
 
 To tackle the problem of feature modality imbalance, we introduce the **Differential Modality Aware Fusion (DMAF) module**. Here’s how it works, step by step:
@@ -95,6 +97,8 @@ To tackle the problem of feature modality imbalance, we introduce the **Differen
 The inspiration for the DMAF module comes from differential amplifier circuits. In these circuits, common signals (similar signals from both images) are reduced, while different signals (the unique characteristics from each image) are boosted. This design helps preserve the original features while adjusting them based on the differences between the RGB and thermal images.
 
 ### IAFA (Illumination Aware Feature Alignment) Module
+
+_TLDR: IAFA Module actually detects the pedestrians. It does through multiple stages: first to detect whether its day/night, then it predicts what is more trustable - RGB or Thermal based on the previous result, followed by aligning the two feature maps using bilinear interpolation. Finally, it detects the pedestrians through a 2 stage approach: the AP Stage and the IAFA Stage._
 
 The **Illumination Aware Feature Alignment (IAFA) module** addresses the challenge of detecting pedestrians under varying lighting conditions. Different types of light can significantly affect how objects appear in images, which can lead to confusion for models that try to identify them. The IAFA module aims to align the features of RGB (color) and thermal images, ensuring that the model performs well regardless of the illumination present.
 
@@ -134,10 +138,10 @@ The goal of this equation is to improve the thermal feature map $$\( F_T \)$$ by
 - **$$\( F_R \)$$** is the **RGB feature map**. It represents critical information derived from color images, including color and texture.
   
 #### **What is the function $$\( F \)$$?**
-- **\( F \)** is a function that represents the residual learning mechanism. This function enhances the original feature maps by allowing them to learn additional information from the other modality.
+- **$$\( F \)$$** is a function that represents the residual learning mechanism. This function enhances the original feature maps by allowing them to learn additional information from the other modality.
 
 #### **What are We Trying to Achieve?**
-- We aim to enhance the thermal feature map \( F_T \) by adding insightful information from the RGB feature map $$\( F_R \)$$. This allows the model to leverage the strengths of both modalities, improving overall performance.
+- We aim to enhance the thermal feature map $$\( F_T \)$$ by adding insightful information from the RGB feature map $$\( F_R \)$$. This allows the model to leverage the strengths of both modalities, improving overall performance.
 
 #### **Step 1: The Basic Concept**
 $$ F'_T = F_T + (\text{Useful information from RGB}) $$
@@ -179,8 +183,8 @@ The first task of the IAFA module is to determine whether the image is captured 
 
 A small neural network is used to make this prediction. It takes the RGB image, resizes it to 56x56 pixels, and processes it through two convolutional layers and three fully connected layers. The network then produces two values:
 
-- \( w_d \): the probability that it’s daytime.
-- \( w_n \): the probability that it’s nighttime.
+- $$\( w_d \)$$: the probability that it’s daytime.
+- $$\( w_n \)$$: the probability that it’s nighttime.
 
 These probabilities are normalized so that:
 
@@ -188,13 +192,13 @@ $$
 w_d + w_n = 1
 $$
 
-The loss function for this prediction, called the **illumination loss** \( L_I \), is calculated as follows:
+The loss function for this prediction, called the **illumination loss** $$\( L_I \)$$, is calculated as follows:
 
 $$
 L_I = -w_{bd} \cdot \log(w_d) - w_{bn} \cdot \log(w_n)
 $$
 
-Here, \( w_{bd} \) and \( w_{bn} \) are the ground truth values (whether it was actually day or night). The network is trained to minimize this loss, improving its ability to differentiate between day and night over time.
+Here, $$\( w_{bd} \)$$ and $$\( w_{bn} \)$$ are the ground truth values (whether it was actually day or night). The network is trained to minimize this loss, improving its ability to differentiate between day and night over time.
 
 #### Re-weighting RGB and Thermal Features
 
@@ -202,8 +206,8 @@ Once the system has predicted the illumination condition, it adjusts how much it
 
 To achieve this, the IAFA module computes two weights:
 
-1. **RGB weight \( w_r \)**
-2. **Thermal weight \( w_t \)**
+1. **RGB weight $$\( w_r \)$$**
+2. **Thermal weight $$\( w_t \)$$**
 
 The formula for the RGB weight is:
 
@@ -212,12 +216,12 @@ w_r = \left( \frac{w_d - w_n}{2} \right) \cdot \left( \alpha_w \cdot |w| + \gamm
 $$
 
 Where:
-- \( w_d \) is the day probability.
-- \( w_n \) is the night probability.
-- \( |w| \) is the confidence of the system in its day/night prediction (the further from 0.5, the more confident it is).
-- \( \alpha_w \) and \( \gamma_w \) are learnable parameters, adjusted during training.
+- $$\( w_d \)$$ is the day probability.
+- $$\( w_n \)$$ is the night probability.
+- $$\( |w| \)$$ is the confidence of the system in its day/night prediction (the further from 0.5, the more confident it is).
+- $$\( \alpha_w \)$$ and $$\( \gamma_w \)$$ are learnable parameters, adjusted during training.
 
-This formula ensures that during the day (\( w_d > w_n \)), \( w_r \) becomes larger, meaning the system trusts the RGB image more. At night (\( w_n > w_d \)), \( w_r \) decreases, and the system will rely more on the thermal image.
+This formula ensures that during the day $$(\( w_d > w_n \))$$, $$\( w_r \)$$ becomes larger, meaning the system trusts the RGB image more. At night (\( w_n > w_d \)), \( w_r \) decreases, and the system will rely more on the thermal image.
 
 For the thermal image, the weight $$\( w_t \)$$ is simply:
 
@@ -238,9 +242,9 @@ $$
 $$
 
 Where:
-- \( (x, y) \) is the original pixel location.
-- \( (dx, dy) \) is the offset predicted by the system to correct the misalignment.
-- \( (x', y') \) is the new, corrected location.
+- $$\( (x, y) \)$$ is the original pixel location.
+- $$\( (dx, dy) \)$$ is the offset predicted by the system to correct the misalignment.
+- $$\( (x', y') \)$$ is the new, corrected location.
 
 The system uses **bilinear interpolation** to smooth out these shifts. Bilinear interpolation works by taking the average of nearby pixels, making the corrected image look smooth without sharp edges or distortions. This ensures that the RGB and thermal features are well aligned before being used by the model for detection.
 
@@ -262,9 +266,9 @@ s_{final} = s_0 \times (w_r \cdot s_r + w_t \cdot s_t)
 $$
 
 Where:
-- \( s_0 \) is the confidence score from the AP stage.
-- \( s_r \) and \( s_t \) are the confidence scores based on the RGB and thermal images.
-- \( w_r \) and \( w_t \) adjust the influence of each modality based on the illumination.
+- $$\( s_0 \)$$ is the confidence score from the AP stage.
+- $$\( s_r \)$$ and $$\( s_t \)$$ are the confidence scores based on the RGB and thermal images.
+- $$\( w_r \)$$ and $$\( w_t \)$$ adjust the influence of each modality based on the illumination.
 
 For the final bounding box location, the system combines the predictions from both stages:
 
@@ -273,15 +277,15 @@ t_{final} = t_0 + t_1
 $$
 
 Where:
-- \( t_0 \) is the initial bounding box prediction from the AP stage.
-- \( t_1 \) is the refined bounding box from the IAFC stage.
+- $$\( t_0 \)$$ is the initial bounding box prediction from the AP stage.
+- $$\( t_1 \)$$ is the refined bounding box from the IAFC stage.
 
 #### Classification and Regression Losses
 
 To train the IAFA module, the system minimizes two types of loss functions:
 
-1. **Classification Loss** \( L_{cls} \), which measures how well the system differentiates between objects (pedestrians) and background.
-2. **Regression Loss** \( L_{reg} \), which measures how accurately the system predicts the location of objects.
+1. **Classification Loss** $$\( L_{cls} \)$$, which measures how well the system differentiates between objects (pedestrians) and background.
+2. **Regression Loss** $$\( L_{reg} \)$$, which measures how accurately the system predicts the location of objects.
 
 The classification loss is applied at both the AP and IAFC stages:
 
@@ -290,8 +294,8 @@ L_{cls} = -\alpha \sum_{i \in S+} (1 - s_i)^\gamma \log(s_i) - (1 - \alpha) \sum
 $$
 
 Where:
-- \( S+ \) is the set of positive samples (where pedestrians are present).
-- \( S- \) is the set of negative samples (background).
+- $$\( S+ \)$$ is the set of positive samples (where pedestrians are present).
+- $$\( S- \)$$ is the set of negative samples (background).
 
 The regression loss is applied when pedestrians are detected:
 
@@ -312,38 +316,38 @@ L = L_I + L_{cls0} + L_{cls1} + [y=1] L_{reg0} + [y=1] L_{reg1}
 $$
 
 Where:
-- \( L_I \) is the illumination loss.
-- \( L_{cls0} \) and \( L_{cls1} \) are the classification losses from the AP and IAFC stages.
-- \( L_{reg0} \) and \( L_{reg1} \) are the regression losses, applied only when objects are detected (\( y=1 \)).
+- $$\( L_I \)$$ is the illumination loss.
+- $$\( L_{cls0} \)$$ and $$\( L_{cls1} \)$$ are the classification losses from the AP and IAFC stages.
+- $$\( L_{reg0} \)$$ and $$\( L_{reg1} \)$$ are the regression losses, applied only when objects are detected (\( y=1 \)).
 
 
 #### Queries I Had While Trying to Understand
 
 Here are answers to some questions that arise when studying this module:
 
-1. **Why do we add the bias of 1/2 in formula for \( w_r \)?**
+1. **Why do we add the bias of 1/2 in formula for $$\( w_r \)$$?**
 
-   The bias ensures that the weight \( w_r \) remains within a reasonable range (typically between 0 and 1). Without this, \( w_r \) could become negative or too skewed toward RGB or thermal images. The \( \frac{1}{2} \) ensures balance between the two modalities, preventing either from being overly dominant.
+   The bias ensures that the weight $$\( w_r \)$$ remains within a reasonable range (typically between 0 and 1). Without this, $$\( w_r \)$$ could become negative or too skewed toward RGB or thermal images. The $$\( \frac{1}{2} \)$$ ensures balance between the two modalities, preventing either from being overly dominant.
 
 2. **What is bilinear interpolation?**
 
-   Bilinear interpolation is a simple algorithm used to smooth out pixel values when they are shifted by the offsets \( dx \) and \( dy \). It estimates the value of a pixel by taking a weighted average of the surrounding pixels, ensuring that the image remains smooth even after misalignment correction.
+   Bilinear interpolation is a simple algorithm used to smooth out pixel values when they are shifted by the offsets $$\( dx \)$$ and $$\( dy \)$$. It estimates the value of a pixel by taking a weighted average of the surrounding pixels, ensuring that the image remains smooth even after misalignment correction.
 
-3. **In the formula for \( w_r \), what is \( w \)?**
+3. **In the formula for $$\( w_r \)$$, what is $$\( w \)$$?**
 
-   The term \( w \) represents the confidence of the system in its day/night prediction. It measures how much the system’s prediction deviates from the neutral state (where \( w_d = w_n = 0.5 \)). The further \( w \) is from 0.5, the more confident the system is in its day/night prediction.
+   The term $$\( w \)$$ represents the confidence of the system in its day/night prediction. It measures how much the system’s prediction deviates from the neutral state (where $$\( w_d = w_n = 0.5 \)$$). The further $$\( w \)$$ is from 0.5, the more confident the system is in its day/night prediction.
 
-4. **How do the two classification losses \( L_{cls0} \) and \( L_{cls1} \) work?**
+4. **How do the two classification losses $$\( L_{cls0} \)$$ and $$\( L_{cls1} \)$$ work?**
 
-   The two classification losses correspond to the two stages in the detection process. \( L_{cls0} \) comes from the Anchor Proposal (AP) stage, which makes rough guesses about object locations. \( L_{cls1} \) comes from the IAFC stage, which refines these predictions. Both losses are necessary because they help the system improve at both rough detection and refined detection.
+   The two classification losses correspond to the two stages in the detection process. $$\( L_{cls0} \)$$ comes from the Anchor Proposal (AP) stage, which makes rough guesses about object locations. $$\( L_{cls1} \)$$ comes from the IAFC stage, which refines these predictions. Both losses are necessary because they help the system improve at both rough detection and refined detection.
 
 5. **Why do we need both losses?**
 
-   The AP stage provides initial estimates, and the IAFC stage refines these. Optimizing both stages allows the system to improve its initial guesses and then refine them for better accuracy. Without \( L_{cls0} \), the initial guesses could be poor, leading to more work for the IAFC stage.
+   The AP stage provides initial estimates, and the IAFC stage refines these. Optimizing both stages allows the system to improve its initial guesses and then refine them for better accuracy. Without $$\( L_{cls0} \)$$ , the initial guesses could be poor, leading to more work for the IAFC stage. The reason we care about both is that the quality of the initial proposals (AP stage) affects the overall performance. Even if the IAFC stage improves the predictions, the model learns better if it also improves the initial guesses in the AP stage. Both stages contribute to learning.
 
-6. **What does the term  $$ \( [y=1] L_{reg0} \) $$ mean?**
+6. **What does the term  $$\( [y=1] L_{reg0} \)$$ mean?**
 
-   This notation means that the regression loss \( L_{reg0} \) is only applied when an object (like a pedestrian) is detected. If there are no objects, the regression loss is not calculated. This avoids unnecessary computations and ensures that bounding box refinement only happens when there’s something to detect.
+   This notation means that the regression loss $$\( L_{reg0} \)$$ is only applied when an object (like a pedestrian) is detected. If there are no objects, the regression loss is not calculated. This avoids unnecessary computations and ensures that bounding box refinement only happens when there’s something to detect.
 
 7. **What if there are multiple pedestrians?**
 
