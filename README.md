@@ -304,8 +304,8 @@ L_{reg} = \sum (b_{gt} - b_{pred})^2
 $$
 
 Where:
-- \( b_{gt} \) is the ground truth bounding box.
-- \( b_{pred} \) is the predicted bounding box.
+- $$\( b_{gt} \)$$ is the ground truth bounding box.
+- $$\( b_{pred} \)$$ is the predicted bounding box.
 
 #### Total Loss Function
 
