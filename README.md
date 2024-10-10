@@ -98,7 +98,7 @@ The inspiration for the DMAF module comes from differential amplifier circuits. 
 
 ### IAFA (Illumination Aware Feature Alignment) Module
 
-_TLDR: IAFA Module actually detects the pedestrians. It does through multiple stages: first to detect whether its day/night, then it predicts what is more trustable - RGB or Thermal based on the previous result, followed by aligning the two feature maps using bilinear interpolation. Finally, it detects the pedestrians through a 2 stage approach: the AP Stage and the IAFA Stage._
+_TLDR: IAFA Module actually detects the pedestrians. It does through multiple stages: first to detect whether its day/night, then it predicts what is more trustable - RGB or Thermal based on the previous result, followed by aligning the two feature maps using bilinear interpolation. Finally, it detects the pedestrians through a 2 stage approach: the AP Stage and the IAFC Stage._
 
 The **Illumination Aware Feature Alignment (IAFA) module** addresses the challenge of detecting pedestrians under varying lighting conditions. Different types of light can significantly affect how objects appear in images, which can lead to confusion for models that try to identify them. The IAFA module aims to align the features of RGB (color) and thermal images, ensuring that the model performs well regardless of the illumination present.
 
