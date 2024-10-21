@@ -1,6 +1,61 @@
 # Multimodal-Balanced-Multispectral-Pedestrian-Detection-Implementation
 This repository is a implementation of the paper "Improving Multispectral Pedestrian Detection by Addressing Modality Imbalance Problems" by Kailai Zhou, Linsen Chen and Xun Cao published in the ECCV 2020 Conference (arXiv Link: https://arxiv.org/pdf/2008.03043v2). Further, I have summarized the paper for easier understanding, targeted to a beginner audience.
 
+## Usage Instructions
+
+### Step 1: Download Required Model Files
+Download the necessary HDF5 model files from [this link](https://drive.google.com/drive/folders/1HEt9WvJRRfINGTsELdQIlWFiLTuOlm33?usp=sharing). Once downloaded, create a directory named `models` in the root directory and place the files inside.
+
+### Step 2: Download KAIST Dataset for Evaluation
+Download the full KAIST dataset for evaluation from [here](https://drive.google.com/drive/folders/1-ohKJ1t9oZrBn72roXgghqf98eGjdvST?usp=sharing). Save the dataset folder as `kaist_full` in the project’s root directory.
+
+### Step 3: Download CVC14 Dataset for Evaluation
+Download the full CVC14 dataset for evaluation from [this link](https://drive.google.com/drive/folders/1HUrV7qNMYaqXYqa6qwpKUpNtFvCukW4o?usp=sharing). Save the dataset folder as `cvc14_full` in the project’s root directory.
+
+### Step 4: Install Dependencies
+To install the required dependencies, run the following command in your terminal:
+
+```bash
+pip install -r requirements.txt
+```
+### Step 5: Set Up Conda Environment
+If you require GPU evaluation, set up a conda environment with CUDA and cuDNN using the following commands:
+```bash
+conda create -n python36 python=3.6
+conda activate python36
+conda install cudatoolkit=10.0
+conda install cudnn=7.6
+```
+
+### Step 6: Run KAIST Dataset Evaluation
+To evaluate the full KAIST dataset, execute the following command:
+```bash
+python kaist_eval.py
+```
+The evaluation results, including FPPI and miss rate, will be saved in outputs.csv located in the outputs directory.
+
+### Step 7: Run CVC14 Dataset Evaluation
+```bash
+python cvc_eval.py
+```
+The results will be appended to the outputs.csv file in the outputs directory.
+
+### Step 8: Custom Evaluation
+To run a custom evaluation on your own RGB and thermal video pair, use the following command:
+```bash
+python mbnet_custom.py {path_to_rgb_video} {path_to_thermal_video}
+```
+If the path to the thermal video is not provided, a thermal filter will be applied to the RGB video.
+
+### Step 9: Run Single Sample Evaluation
+```bash
+python kaist_sample.py
+```
+or
+```bash
+python cvc14_sample.py
+```
+
 ## Modalities in Multispectral Pedestrian Detection
 
 To detect pedestrians both during the day and at night, we use two types of images: **RGB images** (which are regular images from a camera) and **thermal images** (which capture heat). This is where the term **"multispectral"** comes in, since we’re dealing with two different types of data — RGB and thermal. Each has its own strengths and weaknesses, and understanding these will help us see why using both is important.
