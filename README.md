@@ -3,6 +3,12 @@ This repository is a implementation of the paper "Improving Multispectral Pedest
 
 ## Usage Instructions
 
+### Step 0: Clone Repository 
+Clone the repository onto the local system using the command:
+```bash
+git clone https://github.com/kn-joshua/Modality-Balanced-Multispectral-Pedestrian-Detection.git
+```
+
 ### Step 1: Download Required Model Files
 Download the necessary HDF5 model files from [this link](https://drive.google.com/drive/folders/1HEt9WvJRRfINGTsELdQIlWFiLTuOlm33?usp=sharing). Once downloaded, create a directory named `models` in the root directory and place the files inside.
 
