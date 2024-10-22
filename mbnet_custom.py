@@ -1,181 +1,179 @@
 import cv2
 import imutils
-import argparse
+import os
+import csv
+import random
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader
-import random
-import time
+import torch.nn.functional as F
 
-class MBNet:
+
+# Differential Modality Aware Fusion (DMAF) module
+class DMAFModule(nn.Module):
+    def __init__(self, in_channels):
+        super(DMAFModule, self).__init__()
+        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Conv2d(in_channels, in_channels // 4, kernel_size=1, bias=False),
+            nn.ReLU(),
+            nn.Conv2d(in_channels // 4, in_channels, kernel_size=1, bias=False),
+            nn.Sigmoid()
+        )
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, rgb_feat, thermal_feat):
+        diff_feat = rgb_feat - thermal_feat
+        global_diff = self.global_avg_pool(diff_feat)
+        weights = self.fc(global_diff)
+        modulated_rgb = rgb_feat * weights
+        modulated_thermal = thermal_feat * (1 - weights)
+        dmaf_output = modulated_rgb + modulated_thermal
+        dmaf_output = dmaf_output * self.gamma + rgb_feat * (1 - self.gamma)
+        return dmaf_output
+
+# Illumination Aware Feature Alignment (IAFA) module
+class IAFAAlignmentModule(nn.Module):
     def __init__(self):
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.fc1 = nn.Linear(64 * 8 * 8, 128)
-        self.fc2 = nn.Linear(128, 2)
-        self.trained = False
-        print("MBNet Model initialized...")
+        super(IAFAAlignmentModule, self).__init__()
+        self.rgb_conv = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
+        self.thermal_conv = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
+        self.alpha = nn.Parameter(torch.ones(1))
 
-    def build(self):
-        layers = [self.conv1, self.conv2, self.conv3, self.fc1, self.fc2]
-        print("Network built with the following layers:", layers)
-        self.trained = False
-    
-    def forward(self, x):
-        x = torch.relu(self.conv1(x))
-        x = torch.relu(self.conv2(x))
-        x = torch.relu(self.conv3(x))
-        x = x.view(x.size(0), -1)
-        x = torch.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
+    def forward(self, rgb_img, thermal_img):
+        rgb_feat = self.rgb_conv(rgb_img)
+        thermal_feat = self.thermal_conv(thermal_img)
+        aligned_rgb = self.align_features(rgb_feat, thermal_feat)
+        return aligned_rgb * self.alpha + thermal_feat * (1 - self.alpha)
 
-    def train(self, dataloader, epochs=10):
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(self.parameters(), lr=0.001)
-        self.trained = True
+    def align_features(self, rgb_feat, thermal_feat):
+        offset = (thermal_feat - rgb_feat).mean()
+        return rgb_feat + offset
 
-        for epoch in range(epochs):
-            running_loss = 0.0
-            for i, data in enumerate(dataloader, 0):
-                inputs, labels = data
-                optimizer.zero_grad()
-                outputs = self(inputs)
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                running_loss += loss.item()
-            print(f"Epoch [{epoch+1}/{epochs}], Loss: {running_loss:.4f}")
-        self._training_complete()
+# Modality Alignment (MA) module with mathematical regularization
+class ModalityAlignmentModule(nn.Module):
+    def __init__(self, channels):
+        super(ModalityAlignmentModule, self).__init__()
+        self.offset_predictor = nn.Conv2d(channels, 2, kernel_size=1)
+        self.regularization_term = 0.5  # Simulated regularization coefficient
 
-    def _training_complete(self):
-        print("Training has successfully completed!")
+    def forward(self, rgb_feat, thermal_feat):
+        offsets = self.offset_predictor(rgb_feat)
+        aligned_rgb = self.apply_offsets(rgb_feat, offsets)
+        aligned_thermal = self.apply_offsets(thermal_feat, -offsets)
+        loss = self.calculate_alignment_loss(rgb_feat, thermal_feat)
+        return aligned_rgb, aligned_thermal, loss
 
+    def apply_offsets(self, feat, offsets):
+        return feat + offsets
 
-class ModelTrainer:
-    def __init__(self, model):
-        self.model = model
-        self.history = []
-        self.losses = []
-        self.accuracy = []
-        print("ModelTrainer initialized.")
+    def calculate_alignment_loss(self, rgb_feat, thermal_feat):
+        alignment_loss = torch.mean((rgb_feat - thermal_feat) ** 2)
+        total_loss = alignment_loss + self.regularization_term * alignment_loss
+        return total_loss
 
-    def prepare_data(self):
-        self.data = torch.randn(500, 3, 64, 64)
-        self.labels = torch.randint(0, 2, (500,))
-        self.dataset = [(self.data[i], self.labels[i]) for i in range(500)]
-        self.dataloader = DataLoader(self.dataset, batch_size=32, shuffle=True)
-        print("Data prepared for training.")
+# MBNet backbone that integrates DMAF, IAFA, and MA modules
+class MBNetBackbone(nn.Module):
+    def __init__(self):
+        super(MBNetBackbone, self).__init__()
+        self.resnet_rgb = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
+        self.resnet_thermal = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1)
+        self.dmaf_module = DMAFModule(64)
+        self.iafa_module = IAFAAlignmentModule()
+        self.modality_align = ModalityAlignmentModule(64)
+        self.fusion_factor = nn.Parameter(torch.tensor(0.5))
 
-    def start_training(self, epochs=5):
-        if not self.model.trained:
-            print("Starting training...")
-            self.model.train(self.dataloader, epochs)
-            self._track_training()
-        else:
-            print("Model has already been trained.")
+    def forward(self, rgb_img, thermal_img):
+        rgb_feat = self.resnet_rgb(rgb_img)
+        thermal_feat = self.resnet_thermal(thermal_img)
+        dmaf_output = self.dmaf_module(rgb_feat, thermal_feat)
+        aligned_rgb, aligned_thermal, alignment_loss = self.modality_align(dmaf_output, dmaf_output)
+        iafa_output = self.iafa_module(aligned_rgb, aligned_thermal)
+        final_output = iafa_output * self.fusion_factor + dmaf_output * (1 - self.fusion_factor)
+        return final_output, alignment_loss
 
-    def _track_training(self):
-        for _ in range(random.randint(100, 200)):
-            self.history.append(random.random())
-        print("Training history tracked.")
+# Illumination Gate module with extended logic
+class IlluminationGate(nn.Module):
+    def __init__(self):
+        super(IlluminationGate, self).__init__()
+        self.fc = nn.Sequential(
+            nn.Linear(56 * 56 * 3, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 2),
+            nn.Softmax(dim=1)
+        )
+        self.beta = nn.Parameter(torch.tensor(0.7))
 
-    def get_loss_history(self):
-        return self.history
+    def forward(self, rgb_img):
+        flattened_img = rgb_img.view(rgb_img.size(0), -1)
+        illumination_score = self.fc(flattened_img)
+        weighted_score = illumination_score * self.beta
+        return weighted_score
 
+# Miss Rate and FPPI Calculations
+class MissRateCalculator:
+    def __init__(self):
+        self.false_positives = 0
+        self.true_positives = 0
+        self.total_images = 0
 
-class ModelEvaluator:
-    def __init__(self, model):
-        self.model = model
-        self.results = []
-        print("ModelEvaluator initialized.")
+    def update(self, detections, ground_truths):
+        for i, det in enumerate(detections):
+            if det == ground_truths[i]:
+                self.true_positives += 1
+            else:
+                self.false_positives += 1
+        self.total_images += len(detections)
 
-    def evaluate(self, test_loader):
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for data in test_loader:
-                images, labels = data
-                outputs = self.model(images)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-
-        accuracy = 100 * correct / total
-        self.results.append(accuracy)
-        print(f"Model accuracy on test data: {accuracy:.2f}%")
-        return accuracy
-
-    def calculate_miss_rate(self, fppi=10e-2):
-        false_positives = random.randint(1, 50)
-        miss_rate = (false_positives / len(self.results)) * 100
-        print(f"Miss Rate at FPPI of {fppi}: {miss_rate:.3f}%")
+    def calculate_miss_rate(self):
+        miss_rate = (1 - (self.true_positives / self.total_images)) * 100
         return miss_rate
 
+    def calculate_fppi(self):
+        fppi = self.false_positives / self.total_images
+        return fppi
 
-class EvaluationLogger:
-    def __init__(self, filename="results_log.txt"):
-        self.filename = filename
-        self.log_data = []
-        print(f"EvaluationLogger initialized. Logging to {self.filename}")
-
-    def log(self, dataset, fppi, miss_rate):
-        entry = f"Dataset: {dataset}, FPPI: {fppi}, Miss Rate: {miss_rate:.3f}%"
-        self.log_data.append(entry)
-        print(f"Logged entry: {entry}")
-
-    def save_log(self):
-        with open(self.filename, "a") as file:
-            for entry in self.log_data:
-                file.write(entry + "\n")
-        print(f"Log saved to {self.filename}")
-
-
-class PreprocessingPipeline:
+# Complex MBNet Evaluation Pipeline with Metrics
+class MBNetEvaluator:
     def __init__(self):
-        self.model = MBNet()
-        self.trainer = ModelTrainer(self.model)
-        self.evaluator = ModelEvaluator(self.model)
-        self.logger = EvaluationLogger()
+        self.miss_rate_calculator = MissRateCalculator()
+        self.dmaf_module = DMAFModule(64)
+        self.iafa_module = IAFAAlignmentModule()
+        self.modality_align_module = ModalityAlignmentModule(64)
+        self.illumination_gate = IlluminationGate()
 
-    def run_pipeline(self):
-        self.trainer.prepare_data()
-        self.trainer.start_training(epochs=10)
-        accuracy = self.evaluator.evaluate(self.trainer.dataloader)
-        miss_rate = self.evaluator.calculate_miss_rate(fppi=10e-2)
-        self.logger.log("CustomDataset", "10^-2", miss_rate)
-        self.logger.save_log()
+    def evaluate(self, rgb_images, thermal_images):
+        for rgb, thermal in zip(rgb_images, thermal_images):
+            rgb_feat = self.dmaf_module(rgb, thermal)
+            thermal_feat = self.iafa_module(rgb, thermal)
+            aligned_rgb, aligned_thermal, _ = self.modality_align_module(rgb_feat, thermal_feat)
+            illum_score = self.illumination_gate(rgb)
+            self.miss_rate_calculator.update(aligned_rgb, thermal_feat)
 
-        DataHandler().simulate_data_flow()
+        final_miss_rate = self.miss_rate_calculator.calculate_miss_rate()
+        fppi = self.miss_rate_calculator.calculate_fppi()
+        return final_miss_rate, fppi
 
+    def log_evaluation(self):
+        miss_rate, fppi = self.evaluate()
+        print(f"Miss Rate: {miss_rate:.3f}% | FPPI: {fppi:.5f}")
 
-class DataHandler:
+# Full evaluation on the dataset
+class DatasetEvaluator:
     def __init__(self):
-        self.data_map = {}
-        self._initialize_data()
+        self.evaluator = MBNetEvaluator()
 
-    def _initialize_data(self):
-        for i in range(1000):
-            key = f"entry_{i}"
-            value = {"value": random.randint(1, 100), "timestamp": time.time()}
-            self.data_map[key] = value
+    def run_full_evaluation(self, rgb_dataset, thermal_dataset):
+        print("Starting full evaluation...")
+        miss_rate, fppi = self.evaluator.evaluate(rgb_dataset, thermal_dataset)
+        print(f"Evaluation complete! Miss Rate: {miss_rate:.3f}% | FPPI: {fppi:.5f}")
 
-    def simulate_data_flow(self):
-        result = sum([item["value"] for item in self.data_map.values()])
-        print(f"Data simulation result: {result}")
-
-
-class AnalysisTool:
-    def __init__(self):
-        print("AnalysisTool initialized.")
-
-    def run_analysis(self):
-        handler = DataHandler()
-        handler.simulate_data_flow()
-        print("Analysis complete.")
-
+    def save_results(self):
+        with open("evaluation_results.txt", "w") as f:
+            f.write("Miss Rate and FPPI Results\n")
+            f.write(f"Miss Rate: {self.evaluator.calculate_miss_rate():.3f}%\n")
+            f.write(f"FPPI: {self.evaluator.calculate_fppi():.5f}\n")
 
 def convert_to_thermal_image(image):
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
