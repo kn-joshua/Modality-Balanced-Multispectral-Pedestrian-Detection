@@ -62,6 +62,80 @@ or
 python cvc14_sample.py
 ```
 
+## Usage Instructions - PedeScan Model (Quantized)
+
+To implement the _PedeScan_ model for evaluation, first you must follow the steps mentioned above. We are assuming the model files, datasets are downloaded.
+
+### Step 1: Perform the Quantization
+Clone the repository onto the local system using the command:
+```bash
+python quantizer.py
+```
+The quantized HDF5 files are generated and stored in the working directory.
+
+### Step 2: Run the PedeScan Model (Template)
+To run the quantized MBNet Model, this is the general template
+```bash
+python mbnet_quantized_<dataset>.py --quantization_rate <rate> --number_of_epochs <epochs> --dataset <dataset>
+```
+where:
+_dataset_: Specifies the dataset being used (e.g., kaist or cvc14).
+
+_rate_: The quantization rate (in percentage, typically in increments of 5 or 10).
+
+_epochs_: Number of training epochs (often set to 10).
+
+### Step 3: Running the PedeScan Model - KAIST
+To run the quantized MBNet Model on the KAIST Dataset, you may use the following code:
+```bash
+python mbnet_quantized_kaist.py --quantization_rate 5 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 10 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 15 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 20 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 25 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 30 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 35 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 40 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 45 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 50 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 55 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 60 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 65 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 70 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 75 --number_of_epochs 10 --dataset kaist
+python mbnet_quantized_kaist.py --quantization_rate 80 --number_of_epochs 10 --dataset kaist
+```
+
+### Step 4: Running the PedeScan Model - CVC14
+To run the quantized MBNet Model on the CVC-14 Dataset, you may use the following code:
+```bash
+python mbnet_quantized_cvc14.py --quantization_rate 5 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 10 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 15 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 20 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 25 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 30 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 35 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 40 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 45 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 50 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 55 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 60 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 65 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 70 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 75 --number_of_epochs 10 --dataset cvc14
+python mbnet_quantized_cvc14.py --quantization_rate 80 --number_of_epochs 10 --dataset cvc14
+```
+
+### Step 5: Visualizing the results
+
+After running the evaluations, the results are stored in a folder named _results_quantized_. To visualize the results on a graph please use the following command:
+
+```bash
+python visualizer.py
+```
+
+
 ## Modalities in Multispectral Pedestrian Detection
 
 To detect pedestrians both during the day and at night, we use two types of images: **RGB images** (which are regular images from a camera) and **thermal images** (which capture heat). This is where the term **"multispectral"** comes in, since we’re dealing with two different types of data — RGB and thermal. Each has its own strengths and weaknesses, and understanding these will help us see why using both is important.
