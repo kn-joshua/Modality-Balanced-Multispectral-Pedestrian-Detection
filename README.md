@@ -3,6 +3,9 @@ This repository is a implementation of the paper "Improving Multispectral Pedest
 
 ## Usage Instructions
 
+![image](https://github.com/user-attachments/assets/b726efe1-42e0-472b-bb7d-25000d8ff3ec)
+
+
 ### Step 0: Clone Repository 
 Clone the repository onto the local system using the command:
 ```bash
@@ -63,6 +66,8 @@ python cvc14_sample.py
 ```
 
 ## Usage Instructions - PedeScan Model (Quantized)
+
+![image](https://github.com/user-attachments/assets/386cfa52-9233-404e-82c4-47633207b9d6)
 
 To implement the _PedeScan_ model for evaluation, first you must follow the steps mentioned above. We are assuming the model files, datasets are downloaded.
 
@@ -134,6 +139,9 @@ After running the evaluations, the results are stored in a folder named _results
 ```bash
 python visualizer.py
 ```
+
+![image](https://github.com/user-attachments/assets/8ea23453-b52a-4541-9b6b-a4afb33c8097)             ![image](https://github.com/user-attachments/assets/95f98070-b62b-45dc-b7ea-bc48e704dd65)
+
 
 
 ## Modalities in Multispectral Pedestrian Detection
